@@ -68,12 +68,15 @@ amrex::Real IntegratorBase::compute_adaptive_timestep(const amrex::MultiFab& sol
     }
 
     // Take the minimum of the component timesteps
-    Real next_timestep = std::min(target_timesteps);
+    auto next_timestep_idx = std::distance(target_timesteps.begin(),
+                                           std::min_element(target_timesteps.begin(), target_timesteps.end()));
+    Real next_timestep = target_timesteps[next_timestep_idx];
+    limiting_component = next_timestep_idx;
 
     // Apply safety factors to the next timestep
     next_timestep = std::min(std::max(next_timestep * adaptive_factor_lo,
-                                        timestep / adaptive_factor_hi),
-                                timestep * adaptive_factor_hi);
+                                      timestep / adaptive_factor_hi),
+                             timestep * adaptive_factor_hi);
 
     return next_timestep;
 }

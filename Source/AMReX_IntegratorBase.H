@@ -18,6 +18,7 @@ protected:
     amrex::Real timestep;
 
     amrex::Real order;
+    int limiting_component;
     bool use_adaptive_timestep;
     amrex::Vector<amrex::Real> error_abs_tol;
     amrex::Vector<amrex::Real> error_rel_tol;
