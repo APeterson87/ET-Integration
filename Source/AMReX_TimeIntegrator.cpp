@@ -50,8 +50,10 @@ void TimeIntegrator::integrate(const amrex::Real start_timestep, const amrex::Re
             stop_advance = true;
         }
 
+        Print() << "Step " << step_number << ", Time = " << time << " -- Advancing with Timestep = " << timestep << "\n";
+
         // Call the time integrator advance
-        integrator_ptr->advance(timestep);
+        timestep = integrator_ptr->advance(timestep);
 
         // Update our time variable
         time = integrator_ptr->get_time();
