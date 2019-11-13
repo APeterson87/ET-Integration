@@ -15,6 +15,15 @@ protected:
     amrex::MultiFab& S_old;
     amrex::MultiFab& S_new;
     amrex::Real time;
+    amrex::Real timestep;
+
+    amrex::Real order;
+    bool use_adaptive_timestep;
+    amrex::Vector<amrex::Real> error_abs_tol;
+    amrex::Vector<amrex::Real> error_rel_tol;
+    amrex::Real adaptive_factor_lo, adaptive_factor_hi;
+    virtual void compute_error(amrex::MultiFab& solution_error) = 0;
+    amrex::Real compute_adaptive_timestep(const amrex::MultiFab& solution, amrex::MultiFab& solution_error);
 
 public:
     IntegratorBase(amrex::MultiFab& S_old_external, amrex::MultiFab& S_new_external, amrex::Real time);
