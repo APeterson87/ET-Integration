@@ -1,6 +1,7 @@
 #ifndef AMREX_RK_INTEGRATOR_H
 #define AMREX_RK_INTEGRATOR_H
 #include <functional>
+#include <numeric>
 #include <AMReX_REAL.H>
 #include <AMReX_Vector.H>
 #include <AMReX_MultiFab.H>
@@ -16,7 +17,6 @@ class RKIntegrator : public IntegratorBase
 private:
     int tableau_type;
     int number_nodes;
-    bool use_adaptive_timestep;
     amrex::Vector<amrex::MultiFab> F_nodes;
     std::unique_ptr<amrex::MultiFab> S_tmp_ptr;
     amrex::Vector<amrex::Vector<amrex::Real> > tableau;
@@ -26,6 +26,9 @@ private:
     void initialize_preset_tableau();
     void initialize_parameters();
     void initialize_stages();
+
+protected:
+    void compute_error(amrex::MultiFab& solution_error);
 
 public:
     RKIntegrator(amrex::MultiFab& S_old_external, amrex::MultiFab& S_new_external, amrex::Real time);
