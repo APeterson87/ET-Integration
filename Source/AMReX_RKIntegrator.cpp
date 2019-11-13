@@ -4,7 +4,7 @@ using namespace amrex;
 
 RKIntegrator::RKIntegrator(amrex::MultiFab& S_old_external,
                            amrex::MultiFab& S_new_external,
-                           amrex::Real initial_time) : IntegratorBase(S_old_external, S_new_external, initial_time)
+                           amrex::Real initial_time) : AdaptiveIntegratorBase(S_old_external, S_new_external, initial_time)
 {
     initialize_parameters();
     initialize_stages();
@@ -24,25 +24,16 @@ void RKIntegrator::initialize_parameters()
     // By default, define no extended weights and no adaptive timestepping
     extended_weights = {};
 
-    order = 0;
-    use_adaptive_timestep = false;
-    pp.query("use_adaptive_timestep", use_adaptive_timestep);
-    adaptive_factor_lo = 0.9;
-    pp.query("adaptive_factor_lo", adaptive_factor_lo);
-    adaptive_factor_hi = 1.1;
-    pp.query("adaptive_factor_hi", adaptive_factor_hi);
-    error_abs_tol = {0.1};
-    pp.queryarr("error_abs_tol", error_abs_tol);
-    error_rel_tol = {1.e-3};
-    pp.queryarr("error_rel_tol", error_rel_tol);
-
     if (tableau_type == ButcherTableauTypes::User)
     {
         // Read weights/nodes/butcher tableau"
         pp.queryarr("weights", weights);
         pp.queryarr("extended_weights", extended_weights);
         pp.queryarr("nodes", nodes);
+
+        int order = 0;
         pp.query("order", order);
+        set_order(order);
 
         Vector<Real> btable; // flattened into row major format
         pp.queryarr("tableau", btable);
@@ -98,7 +89,7 @@ void RKIntegrator::initialize_preset_tableau()
             nodes = {0.0};
             tableau = {{0.0}};
             weights = {1.0};
-            order = 1;
+            set_order(1);
             break;
         case ButcherTableauTypes::Trapezoid:
             nodes = {0.0,
@@ -106,7 +97,7 @@ void RKIntegrator::initialize_preset_tableau()
             tableau = {{0.0},
                        {1.0, 0.0}};
             weights = {0.5, 0.5};
-            order = 2;
+            set_order(2);
             break;
         case ButcherTableauTypes::SSPRK3:
             nodes = {0.0,
@@ -116,7 +107,7 @@ void RKIntegrator::initialize_preset_tableau()
                        {1.0, 0.0},
                        {0.25, 0.25, 0.0}};
             weights = {1./6., 1./6., 2./3.};
-            order = 3;
+            set_order(3);
             break;
         case ButcherTableauTypes::RK4:
             nodes = {0.0,
@@ -128,7 +119,7 @@ void RKIntegrator::initialize_preset_tableau()
                        {0.0, 0.5, 0.0},
                        {0.0, 0.0, 1.0, 0.0}};
             weights = {1./6., 1./3., 1./3., 1./6.};
-            order = 4;
+            set_order(4);
             break;
         case ButcherTableauTypes::Ralston4:
             nodes = {0.0,
@@ -140,7 +131,7 @@ void RKIntegrator::initialize_preset_tableau()
                        {0.29697761, 0.15875964, 0.0},
                        {0.21810040, -3.05096516, 3.83286476, 0.0}};
             weights = {0.17476028, -0.55148066, 1.20553560, 0.17118478};
-            order = 4;
+            set_order(4);
             break;
         case ButcherTableauTypes::HeunEuler21:
             nodes = {0.0,
@@ -149,7 +140,7 @@ void RKIntegrator::initialize_preset_tableau()
                        {1.0, 0.0}};
             weights = {0.5, 0.5};
             extended_weights = {1.0, 0.0};
-            order = 2;
+            set_order(2);
             break;
         case ButcherTableauTypes::Fehlberg21:
             nodes = {0.0,
@@ -160,7 +151,7 @@ void RKIntegrator::initialize_preset_tableau()
                        {1./256., 255./256., 0.0}};
             weights = {1./256., 255./256., 0.0};
             extended_weights = {1./512., 255./256., 1./512.};
-            order = 2;
+            set_order(2);
             break;
         case ButcherTableauTypes::BogackiShampine32:
             nodes = {0.0,
@@ -173,7 +164,7 @@ void RKIntegrator::initialize_preset_tableau()
                        {2./9., 1./3., 4./9., 0.0}};
             weights = {2./9., 1./3., 4./9., 0.0};
             extended_weights = {7./24., 1./4., 1./3., 1./8.};
-            order = 3;
+            set_order(3);
             break;
         case ButcherTableauTypes::Fehlberg54:
             nodes = {0.0,
@@ -190,7 +181,7 @@ void RKIntegrator::initialize_preset_tableau()
                        {-8./27., 2.0, -3544./2565., 1859./4104., -11./40., 0.0}};
             weights = {16./135., 0.0, 6656./12825., 28561./56430., -9./50., 2./55.};
             extended_weights = {25./216., 0.0, 1408./2565., 2197./4104., -1./5., 0.0};
-            order = 5;
+            set_order(5);
             break;
         case ButcherTableauTypes::CashKarp54:
             nodes = {0.0,
@@ -207,7 +198,7 @@ void RKIntegrator::initialize_preset_tableau()
                        {1631./55296., 175./512., 575./13824., 44275./110592., 253./4096., 0.0}};
             weights = {37./378., 0.0, 250./621., 125./594., 0.0, 512./1771.};
             extended_weights = {2825./27648., 0.0, 18575./48384., 13525./55296., 277./14336., 1./4.};
-            order = 5;
+            set_order(5);
             break;
         default:
             Error("Invalid RK Integrator tableau type");
@@ -291,7 +282,7 @@ Real RKIntegrator::advance(const Real time_step)
     // If we are working with an extended Butcher tableau, we can estimate the error
     // and then calculate an adaptive timestep.
     Real next_timestep = timestep;
-    if (use_adaptive_timestep)
+    if (using_adaptivity())
     {
         // The solution error will be computed and put in S_tmp
         next_timestep = compute_adaptive_timestep(S_new, S_tmp);

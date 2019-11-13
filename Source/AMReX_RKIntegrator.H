@@ -6,13 +6,13 @@
 #include <AMReX_Vector.H>
 #include <AMReX_MultiFab.H>
 #include <AMReX_ParmParse.H>
-#include "AMReX_IntegratorBase.H"
+#include "AMReX_AdaptiveIntegratorBase.H"
 
 namespace ButcherTableauTypes {
     enum ButcherTypes {User = 0, ForwardEuler, Trapezoid, SSPRK3, RK4, Ralston4, HeunEuler21, Fehlberg21, BogackiShampine32, Fehlberg54, CashKarp54, NumTypes};
 };
 
-class RKIntegrator : public IntegratorBase
+class RKIntegrator : public AdaptiveIntegratorBase
 {
 private:
     int tableau_type;
