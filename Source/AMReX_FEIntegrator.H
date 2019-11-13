@@ -11,6 +11,9 @@ class FEIntegrator : public IntegratorBase
 private:
     std::unique_ptr<amrex::MultiFab> F_tmp_ptr;
 
+protected:
+    void compute_error(amrex::MultiFab& solution_error){}
+
 public:
     FEIntegrator(amrex::MultiFab& S_old_external, amrex::MultiFab& S_new_external, amrex::Real time);
     amrex::Real advance(const amrex::Real timestep);
