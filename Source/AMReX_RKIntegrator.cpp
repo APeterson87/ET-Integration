@@ -27,6 +27,10 @@ void RKIntegrator::initialize_parameters()
     order = 0;
     use_adaptive_timestep = false;
     pp.query("use_adaptive_timestep", use_adaptive_timestep);
+    adaptive_factor_lo = 0.9;
+    pp.query("adaptive_factor_lo", adaptive_factor_lo);
+    adaptive_factor_hi = 1.1;
+    pp.query("adaptive_factor_hi", adaptive_factor_hi);
     error_abs_tol = {0.1};
     pp.queryarr("error_abs_tol", error_abs_tol);
     error_rel_tol = {1.e-3};
@@ -227,7 +231,7 @@ void RKIntegrator::compute_error(MultiFab& solution_error)
     solution_error = 0.0;
     for (int i = 0; i < number_nodes; ++i)
     {
-        MultiFab::Saxpy(solution_error, timestep * (weights[i]-extended_weights[i]), F_nodes[i], 0, 0, S_tmp.nComp(), 0);
+        MultiFab::Saxpy(solution_error, timestep * (weights[i]-extended_weights[i]), F_nodes[i], 0, 0, solution_error.nComp(), 0);
     }
 }
 
