@@ -9,5 +9,7 @@ CEXE_sources += AMReX_RKIntegrator.cpp
 CEXE_headers += AMReX_RKIntegrator.H
 CEXE_sources += AMReX_IntegratorBase.cpp
 CEXE_headers += AMReX_IntegratorBase.H
+CEXE_sources += AMReX_AdaptiveIntegratorBase.cpp
+CEXE_headers += AMReX_AdaptiveIntegratorBase.H
 CEXE_headers += ET_Integration.H
 CEXE_sources += ET_Integration.cpp
