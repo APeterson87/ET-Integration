@@ -22,10 +22,12 @@ private:
     int step_number;
     std::unique_ptr<IntegratorBase> integrator_ptr;
     std::function<void ()> post_timestep;
+    std::function<amrex::Real ()> timestep_limiter;
 
 public:
     TimeIntegrator(amrex::MultiFab& S_old_external, amrex::MultiFab& S_new_external, amrex::Real time);
     void set_post_timestep(std::function<void ()> F);
+    void set_timestep_limiter(std::function<amrex::Real ()> F);
     void set_post_update(std::function<void (amrex::MultiFab&)> F);
     void set_rhs(std::function<void(amrex::MultiFab&, const amrex::MultiFab&, const amrex::Real)> F);
     void integrate(const amrex::Real start_timestep, const amrex::Real end_time, const int nsteps);

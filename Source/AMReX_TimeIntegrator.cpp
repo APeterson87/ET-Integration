@@ -27,6 +27,9 @@ TimeIntegrator::TimeIntegrator(amrex::MultiFab& S_old_external,
     // By default, do nothing post-timestep
     set_post_timestep([](){});
 
+    // By default, do nothing to limit the timestep
+    set_timestep_limiter([&]() -> Real { return get_timestep(); });
+
     // By default, do nothing after updating the state
     // In general, this is where BCs should be filled
     set_post_update([](MultiFab& S_data){});
@@ -60,12 +63,20 @@ void TimeIntegrator::integrate(const amrex::Real start_timestep, const amrex::Re
 
         // Call the post-timestep hook
         post_timestep();
+
+        // Limit the timestep
+        timestep = std::min(timestep, timestep_limiter())
     }
 }
 
 void TimeIntegrator::set_post_timestep(std::function<void ()> F)
 {
     post_timestep = F;
+}
+
+void TimeIntegrator::set_timestep_limiter(std::function<Real ()> F)
+{
+    timestep_limiter = F;
 }
 
 void TimeIntegrator::set_post_update(std::function<void (amrex::MultiFab&)> F)
