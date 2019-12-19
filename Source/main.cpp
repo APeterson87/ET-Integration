@@ -99,9 +99,6 @@ void main_main ()
     // Initialize state_new by calling a C++ initializing routine.
     init(state_new, time, geom);
 
-    // Compute the time step
-    Real dt = cfl*dx[0]*dx[0] / (2.0*AMREX_SPACEDIM);
-
     // Write a plotfile of the initial data if plot_int > 0 (plot_int was defined in the inputs file)
     if (plot_int > 0)
     {
@@ -138,9 +135,19 @@ void main_main ()
         }
     };
 
+    // Create a timestep limiter to return the maximum timestep we can take
+    auto timestep_limit_fun = [&]() -> Real {
+        Real dt = cfl*dx[0]*dx[0] / (2.0*AMREX_SPACEDIM);
+        return dt;
+    };
+
+    // Set RHS, update, and other control functions for the integrator
     integrator.set_rhs(source_fun);
     integrator.set_post_update(post_update_fun);
     integrator.set_post_timestep(post_timestep_fun);
+    integrator.set_timestep_limiter(timestep_limit_fun);
+
+    // Do the integration to end_time or nsteps starting with step dt
     integrator.integrate(dt, end_time, nsteps);
 
     // Write a final plotfile
